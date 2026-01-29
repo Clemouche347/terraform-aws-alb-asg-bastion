@@ -8,6 +8,11 @@ variable "public_subnet_id" {
   type        = string
 }
 
+variable "private_subnet_ids" {
+  description = "Private subnet IDs for the ASG"
+  type        = list(string)
+}
+
 variable "allowed_ssh_cidr" {
   description = "CIDR allowed to SSH into the bastion"
   type        = string
@@ -16,4 +21,10 @@ variable "allowed_ssh_cidr" {
 variable "key_name" {
   description = "EC2 key pair name"
   type        = string
+}
+
+variable "region" {
+  description = "region chosen for the VPC"
+  type        = string
+  default     = "eu-west-3"
 }
