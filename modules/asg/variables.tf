@@ -65,7 +65,7 @@ variable "environment" {
 variable "health_check_type" {
   description = "ASG health check type (EC2 or ELB)"
   type        = string
-  default     = "EC2"
+  default     = "ELB" # Changed from EC2
 
   validation {
     condition     = contains(["EC2", "ELB"], var.health_check_type)
@@ -77,4 +77,10 @@ variable "health_check_grace_period" {
   description = "Time (in seconds) before health checks start"
   type        = number
   default     = 300
+}
+
+variable "alb_security_group_id" {
+  description = "Security group ID of the ALB (to allow HTTP traffic)"
+  type        = string
+  default     = null  
 }
