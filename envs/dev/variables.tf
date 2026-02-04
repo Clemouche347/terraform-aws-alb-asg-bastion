@@ -3,9 +3,14 @@ variable "vpc_id" {
   type        = string
 }
 
-variable "public_subnet_id" {
-  description = "Public subnet ID for the bastion host"
-  type        = string
+variable "public_subnet_ids" {
+  description = "Public subnet IDs (at least 2 for ALB high availability)"
+  type        = list(string)
+
+  validation {
+    condition     = length(var.public_subnet_ids) >= 2
+    error_message = "At least 2 public subnets required for ALB high availability."
+  }
 }
 
 variable "private_subnet_ids" {
@@ -29,8 +34,26 @@ variable "region" {
   default     = "eu-west-3"
 }
 
-variable "target_group_arns" {
-  description = "Target group ARNs to attach to the ASG"
-  type        = list(string)
-  default     = []
+variable "environment" {
+  description = "Deployment environment"
+  type        = string
+  default     = "dev"
+}
+
+variable "desired_capacity" {
+  description = "Desired capacity for ASG"
+  type        = number
+  default     = 2
+}
+
+variable "min_size" {
+  description = "Minimum size for ASG"
+  type        = number
+  default     = 1
+}
+
+variable "max_size" {
+  description = "Maximum size for ASG"
+  type        = number
+  default     = 3
 }

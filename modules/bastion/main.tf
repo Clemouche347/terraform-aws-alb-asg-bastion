@@ -15,7 +15,7 @@ data "aws_ami" "amazon_linux" {
 }
 
 resource "aws_security_group" "bastion" {
-  name        = "bastion-sg"
+  name        = "bastion-sg-${var.environment}"
   description = "Bastion host security group"
   vpc_id      = var.vpc_id
 
@@ -35,12 +35,13 @@ resource "aws_security_group" "bastion" {
   }
 
   tags = {
-    Name = "bastion-sg"
+    Name        = "bastion-sg-${var.environment}"
+    Environment = var.environment
   }
 }
 
 resource "aws_iam_role" "bastion" {
-  name = "bastion-ssm-role"
+  name = "bastion-ssm-role-${var.environment}"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -58,7 +59,7 @@ resource "aws_iam_role_policy_attachment" "ssm" {
 }
 
 resource "aws_iam_instance_profile" "bastion" {
-  name = "bastion-instance-profile"
+  name = "bastion-instance-profile-${var.environment}"
   role = aws_iam_role.bastion.name
 }
 
@@ -76,7 +77,7 @@ resource "aws_instance" "bastion" {
   }
 
   tags = {
-    Name        = "bastion"
-    Environment = "dev"
+    Name        = "bastion-${var.environment}"
+    Environment = var.environment
   }
 }

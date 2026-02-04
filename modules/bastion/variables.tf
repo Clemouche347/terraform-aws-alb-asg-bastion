@@ -19,7 +19,13 @@ variable "key_name" {
 }
 
 variable "instance_type" {
-  type    = string
+  type        = string
   description = "type of the instance"
-  default = "t3.micro"
+  default     = "t3.micro"
+}
+
+variable "environment" {
+  type        = string
+  description = "Deployment environment (e.g. dev, staging, prod)"
+  default     = "dev"
 }

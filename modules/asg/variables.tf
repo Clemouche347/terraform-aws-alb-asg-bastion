@@ -82,5 +82,11 @@ variable "health_check_grace_period" {
 variable "alb_security_group_id" {
   description = "Security group ID of the ALB (to allow HTTP traffic)"
   type        = string
-  default     = null  
+  default     = null
+}
+
+variable "target_group_arns" {
+  description = "Target group ARNs to attach to the ASG"
+  type        = list(string)
+  default     = []
 }

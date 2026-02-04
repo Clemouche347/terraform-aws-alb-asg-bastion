@@ -70,7 +70,8 @@ locals {
               systemctl enable nginx
               systemctl start nginx
 
-              INSTANCE_ID=$(curl -s --fail http://169.254.169.254/latest/meta-data/instance-id || echo "unknown")
+              TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+              INSTANCE_ID=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id || echo "unknown")
 
               cat <<HTML > /usr/share/nginx/html/index.html
               <html>
@@ -122,6 +123,7 @@ resource "aws_autoscaling_group" "app" {
   vpc_zone_identifier       = var.private_subnet_ids
   health_check_type         = var.health_check_type
   health_check_grace_period = var.health_check_grace_period
+  target_group_arns = var.target_group_arns
 
   launch_template {
     id      = aws_launch_template.app.id
@@ -137,10 +139,4 @@ resource "aws_autoscaling_group" "app" {
   lifecycle {
     create_before_destroy = true
   }
-}
-
-resource "aws_autoscaling_group" "app" {
-  ...
-  target_group_arns = var.target_group_arns
-  ...
 }
