@@ -138,3 +138,9 @@ resource "aws_autoscaling_group" "app" {
     create_before_destroy = true
   }
 }
+
+resource "aws_autoscaling_group" "app" {
+  ...
+  target_group_arns = var.target_group_arns
+  ...
+}

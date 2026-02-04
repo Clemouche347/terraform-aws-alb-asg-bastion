@@ -17,3 +17,26 @@ module "app_asg" {
   max_size           = 3
   environment        = "dev"
 }
+
+
+module "alb" {
+  source = "../../modules/alb"
+  
+  vpc_id            = var.vpc_id
+  public_subnet_ids = [var.public_subnet_id] # adapt if list
+  environment       = var.environment
+  alb_name          = "app-alb-${var.environment}"
+}
+
+module "app_asg" {
+  source = "../../modules/asg"
+
+  vpc_id              = var.vpc_id
+  private_subnet_ids  = var.private_subnet_ids
+  desired_capacity    = var.desired_capacity
+  min_size            = var.min_size
+  max_size            = var.max_size
+  environment         = var.environment
+
+  target_group_arns   = [module.alb.target_group_arn]
+}

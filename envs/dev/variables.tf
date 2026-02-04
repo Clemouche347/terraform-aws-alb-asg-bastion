@@ -28,3 +28,9 @@ variable "region" {
   type        = string
   default     = "eu-west-3"
 }
+
+variable "target_group_arns" {
+  description = "Target group ARNs to attach to the ASG"
+  type        = list(string)
+  default     = []
+}
