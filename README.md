@@ -2,12 +2,47 @@
 
 Production-grade AWS infrastructure using Terraform with Auto Scaling, Application Load Balancer, and secure bastion access.
 
-## Architecture
+## Architecture Overview
 
-- **VPC**: Multi-AZ setup with public and private subnets
-- **Bastion Host**: Secure jump server in public subnet with SSM support
-- **Auto Scaling Group**: Application tier in private subnets
-- **Application Load Balancer**: (Coming in Week 5 Day 3)
+```
+                         INTERNET
+                            │
+            ┌───────────────┼───────────────┐
+            │               │               │
+            ▼               ▼               │
+      ┌──────────┐   ┌──────────┐          │
+      │ Bastion  │   │   ALB    │          │
+      │ (SSH:22) │   │ (HTTP:80)│          │
+      └──────────┘   └────┬─────┘          │
+            │             │                │
+            │      ┌──────┴──────┐         │
+            │      ▼             ▼         │
+            │  ┌───────┐    ┌───────┐      │
+            └─▶│ EC2   │    │ EC2   │      │
+               │ nginx │    │ nginx │      │
+               └───────┘    └───────┘      │
+                   PRIVATE SUBNETS         │
+```
+
+### Components
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| **ALB** | Public subnets (2 AZs) | Distributes HTTP traffic, health checks |
+| **ASG** | Private subnets (2 AZs) | Auto-scaling application instances (1-3) |
+| **Bastion** | Public subnet | SSH jump host for admin access |
+
+## Project Structure
+
+```
+terraform-aws-alb-asg-bastion/
+├── modules/
+│   ├── alb/           # Application Load Balancer
+│   ├── asg/           # Auto Scaling Group
+│   └── bastion/       # Bastion Host
+└── envs/
+    └── dev/           # Development environment
+```
 
 ## Prerequisites
 
@@ -15,36 +50,102 @@ Production-grade AWS infrastructure using Terraform with Auto Scaling, Applicati
 - AWS CLI configured
 - Valid AWS credentials
 - SSH key pair created in AWS
+- Existing VPC with public and private subnets
 
 ## Quick Start
 
 1. Navigate to environment:
 ```bash
-   cd envs/dev
+cd envs/dev
 ```
 
 2. Create `terraform.tfvars`:
 ```hcl
-   vpc_id             = "vpc-xxxxx"
-   public_subnet_id   = "subnet-xxxxx"
-   private_subnet_ids = ["subnet-xxxxx", "subnet-yyyyy"]
-   allowed_ssh_cidr   = "YOUR_IP/32"
-   key_name           = "your-key-name"
-   region             = "eu-west-3"
+vpc_id             = "vpc-xxxxx"
+public_subnet_ids  = ["subnet-xxxxx", "subnet-yyyyy"]
+private_subnet_ids = ["subnet-aaaaa", "subnet-bbbbb"]
+allowed_ssh_cidr   = "YOUR_IP/32"
+key_name           = "your-key-name"
+region             = "eu-west-3"
 ```
 
 3. Deploy:
 ```bash
-   terraform init
-   terraform plan
-   terraform apply
+terraform init
+terraform plan
+terraform apply
 ```
+
+4. Access the application:
+```bash
+# Get the ALB DNS name from outputs
+curl http://<alb_dns_name>
+```
+
+## Modules
+
+### ALB Module
+
+Creates an internet-facing Application Load Balancer with:
+- HTTP listener on port 80
+- Target group with health checks
+- Security group allowing HTTP from anywhere
+
+### ASG Module
+
+Creates an Auto Scaling Group with:
+- Launch template (Amazon Linux 2023, nginx)
+- Scaling: min=1, desired=2, max=3
+- ELB health checks
+- SSM Session Manager access
+
+### Bastion Module
+
+Creates a jump host with:
+- Public IP in public subnet
+- SSH access restricted to specified CIDR
+- SSM Session Manager as alternative access
 
 ## Security Features
 
-- ✅ IMDSv2 enforced on all EC2 instances
-- ✅ SSH restricted to specific IP
-- ✅ SSM Session Manager enabled
-- ✅ Private instances have no public IPs
-- ✅ Security groups follow least-privilege
+- IMDSv2 enforced on all EC2 instances
+- SSH restricted to specific IP (bastion only)
+- SSM Session Manager enabled (no SSH keys for ASG)
+- Private instances have no public IPs
+- Security group chaining (ASG accepts traffic only from ALB)
+
+## Accessing Instances
+
+### Via Bastion (SSH)
+```bash
+ssh -i your-key.pem ec2-user@<bastion_public_ip>
+```
+
+### Via SSM Session Manager
+```bash
+aws ssm start-session --target <instance_id>
+```
+
+## Outputs
+
+| Output | Description |
+|--------|-------------|
+| `bastion_public_ip` | Public IP of bastion host |
+| `bastion_instance_id` | Instance ID for SSM access |
+| `asg_name` | Auto Scaling Group name |
+| `alb_dns_name` | DNS name to access the application |
+
+## Customization
+
+Override defaults in `terraform.tfvars`:
+
+```hcl
+# Scaling
+desired_capacity = 2
+min_size         = 1
+max_size         = 5
+
+# Environment
+environment = "staging"
+```
 
