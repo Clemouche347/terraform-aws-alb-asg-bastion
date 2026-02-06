@@ -63,3 +63,27 @@ variable "max_size" {
   type        = number
   default     = 3
 }
+
+# -----------------------------------------------------------
+# CloudWatch Monitoring Configuration
+# -----------------------------------------------------------
+
+variable "alarm_email_endpoints" {
+  description = "List of email addresses to receive CloudWatch alarm notifications"
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition = alltrue([
+      for email in var.alarm_email_endpoints :
+      can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", email))
+    ])
+    error_message = "All email addresses must be valid."
+  }
+}
+
+variable "alarm_sms_endpoints" {
+  description = "List of phone numbers (E.164 format, e.g., +33612345678) to receive alarm notifications"
+  type        = list(string)
+  default     = []
+}

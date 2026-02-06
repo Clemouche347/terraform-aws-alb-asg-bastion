@@ -17,26 +17,6 @@ module "alb" {
   alb_name          = "app-alb-${var.environment}"
 }
 
-module "alb_logs" {
-  source = "../../modules/observability"
-
-  project_name       = var.project_name
-  environment        = "dev"
-  log_retention_days = 180 # 6 months retention
-}
-
-# NOTE: When you create your ALB module (Day 3), add this:
-#
-# module "alb" {
-#   source = "../../modules/alb"
-#   
-#   # ... other variables ...
-#   
-#   enable_access_logs = true
-#   access_logs_bucket = module.alb_logs.bucket_name
-#   access_logs_prefix = "alb-logs"
-# }
-
 module "app_asg" {
   source = "../../modules/asg"
 
@@ -47,6 +27,55 @@ module "app_asg" {
   max_size              = var.max_size
   environment           = var.environment
   alb_security_group_id = module.alb.alb_sg_id
+  health_check_type     = "EC2"
 
   target_group_arns = [module.alb.target_group_arn]
+}
+
+# -----------------------------------------------------------
+# CLOUDWATCH MONITORING (Day 4)
+# -----------------------------------------------------------
+module "cloudwatch_monitoring" {
+  source = "../../modules/observability"
+
+  project_name = var.project_name
+  environment  = "dev"
+
+  # SNS Notification Configuration
+  alarm_email_endpoints = var.alarm_email_endpoints
+  # alarm_sms_endpoints   = var.alarm_sms_endpoints  # Optional
+  send_ok_notifications = true # Get notified when alarms recover
+
+  # Resource Monitoring
+  # alb_arn            = module.alb.arn              # Uncomment when ALB exists
+  asg_name         = module.app_asg.asg_name
+  ec2_instance_ids = [module.bastion.instance_id] # Monitor bastion
+
+  # Alarm Configuration
+  enable_alb_alarms = false # Set to true when ALB is deployed
+  enable_asg_alarms = true
+  enable_ec2_alarms = true # Monitor bastion host
+
+  # Alarm Thresholds (customize as needed)
+  cpu_threshold              = 80  # Alert at 80% CPU
+  response_time_threshold    = 2.0 # Alert at 2 seconds
+  unhealthy_target_threshold = 0   # Alert on any unhealthy target
+  error_5xx_threshold        = 5.0 # Alert at 5% error rate
+
+  # Evaluation Periods
+  cpu_evaluation_periods              = 2 # 2 periods (10 min at 5 min intervals)
+  unhealthy_target_evaluation_periods = 2
+  response_time_evaluation_periods    = 3
+
+  # Composite Alarm (alerts when multiple issues occur)
+  create_composite_alarm = false # Set to true when both ALB and ASG exist
+
+  # Common Tags
+  common_tags = {
+    Project     = var.project_name
+    Environment = "dev"
+    ManagedBy   = "Terraform"
+    Owner       = "DevOps-Team"
+    CostCenter  = "Engineering"
+  }
 }
