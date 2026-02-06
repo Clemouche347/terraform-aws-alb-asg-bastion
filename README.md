@@ -10,10 +10,10 @@ Production-grade AWS infrastructure using Terraform with Auto Scaling, Applicati
             ┌───────────────┼───────────────┐
             │               │               │
             ▼               ▼               │
-      ┌──────────┐   ┌──────────┐          │
-      │ Bastion  │   │   ALB    │          │
-      │ (SSH:22) │   │ (HTTP:80)│          │
-      └──────────┘   └────┬─────┘          │
+      ┌──────────┐   ┌──────────┐   ┌─────────┐
+      │ Bastion  │   │   ALB    │──▶│   S3    │
+      │ (SSH:22) │   │ (HTTP:80)│   │  Logs   │
+      └──────────┘   └────┬─────┘   └─────────┘
             │             │                │
             │      ┌──────┴──────┐         │
             │      ▼             ▼         │
@@ -31,6 +31,7 @@ Production-grade AWS infrastructure using Terraform with Auto Scaling, Applicati
 | **ALB** | Public subnets (2 AZs) | Distributes HTTP traffic, health checks |
 | **ASG** | Private subnets (2 AZs) | Auto-scaling application instances (1-3) |
 | **Bastion** | Public subnet | SSH jump host for admin access |
+| **S3 Logs** | Regional | ALB access logs with lifecycle management |
 
 ## Project Structure
 
@@ -39,7 +40,8 @@ terraform-aws-alb-asg-bastion/
 ├── modules/
 │   ├── alb/           # Application Load Balancer
 │   ├── asg/           # Auto Scaling Group
-│   └── bastion/       # Bastion Host
+│   ├── bastion/       # Bastion Host
+│   └── observability/ # ALB Access Logs (S3)
 └── envs/
     └── dev/           # Development environment
 ```
@@ -106,6 +108,14 @@ Creates a jump host with:
 - SSH access restricted to specified CIDR
 - SSM Session Manager as alternative access
 
+### Observability Module
+
+Creates S3 bucket for ALB access logs with:
+- Lifecycle policy: Standard → IA (30d) → Glacier (90d) → Delete (180d)
+- Versioning enabled for data protection
+- Public access blocked
+- Bucket policy for ALB log delivery
+
 ## Security Features
 
 - IMDSv2 enforced on all EC2 instances
@@ -134,6 +144,8 @@ aws ssm start-session --target <instance_id>
 | `bastion_instance_id` | Instance ID for SSM access |
 | `asg_name` | Auto Scaling Group name |
 | `alb_dns_name` | DNS name to access the application |
+| `alb_logs_bucket_name` | S3 bucket name for ALB access logs |
+| `alb_logs_bucket_arn` | S3 bucket ARN for ALB access logs |
 
 ## Customization
 

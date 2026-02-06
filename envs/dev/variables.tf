@@ -1,3 +1,21 @@
+variable "project_name" {
+  description = "Project name for resource naming"
+  type        = string
+  default     = "flowops-infra"
+}
+
+variable "region" {
+  description = "region chosen for the VPC"
+  type        = string
+  default     = "eu-west-3"
+}
+
+variable "environment" {
+  description = "Deployment environment"
+  type        = string
+  default     = "dev"
+}
+
 variable "vpc_id" {
   description = "VPC ID for the environment"
   type        = string
@@ -26,18 +44,6 @@ variable "allowed_ssh_cidr" {
 variable "key_name" {
   description = "EC2 key pair name"
   type        = string
-}
-
-variable "region" {
-  description = "region chosen for the VPC"
-  type        = string
-  default     = "eu-west-3"
-}
-
-variable "environment" {
-  description = "Deployment environment"
-  type        = string
-  default     = "dev"
 }
 
 variable "desired_capacity" {

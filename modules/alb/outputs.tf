@@ -4,7 +4,7 @@ output "alb_dns" {
 }
 
 output "alb_arn" {
-  value = aws_lb.alb.arn
+  value = aws_lb.alb.arna
 }
 
 output "alb_sg_id" {
